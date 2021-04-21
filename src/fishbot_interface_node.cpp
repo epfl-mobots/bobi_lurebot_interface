@@ -12,6 +12,7 @@
 #include <bobi_msgs/ProximitySensors.h>
 
 #include <iostream>
+#include <sstream>
 
 struct FishbotConfig {
     std::vector<double> led_colour = {0, 0, 255};
@@ -78,9 +79,9 @@ protected:
 
     void _motor_velocity_cb(const bobi_msgs::MotorVelocities::ConstPtr& motor_velocities)
     {
-        int left_motor_mm_per_s = motor_velocities->left * 1000;
-        int right_motor_mm_per_s = motor_velocities->right * 1000;
-        std::string cmd = std::to_string(left_motor_mm_per_s) + ":" + std::to_string(right_motor_mm_per_s) + ":" + std::to_string(_enable_ir);
+        float left_motor_cm_per_s = motor_velocities->left * 100;
+        float right_motor_cm_per_s = motor_velocities->right * 100;
+        std::string cmd = _to_string_with_precision(left_motor_cm_per_s) + ":" + _to_string_with_precision(right_motor_cm_per_s) + ":" + std::to_string(_enable_ir);
 
         send(cmd);
         if (_enable_ir) {
@@ -94,6 +95,15 @@ protected:
     {
         _enable_ir = req.enable;
         return true;
+    }
+
+    template <typename T>
+    std::string _to_string_with_precision(const T& val, const int n = 1)
+    {
+        std::ostringstream out;
+        out.precision(n);
+        out << std::fixed << val;
+        return out.str();
     }
 
     std::shared_ptr<ros::NodeHandle> _nh;

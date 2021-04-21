@@ -2,4 +2,4 @@ led_colour: [0, 0, 255]
 ip: 192.168.0.157
 port: 5623
 rate: 30
-enable_ir: True
+enable_ir: False
