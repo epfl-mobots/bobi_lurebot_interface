@@ -43,7 +43,7 @@ public:
     {
         _enable_ir = cfg.enable_ir;
         _socket.open(boost::asio::ip::udp::v4());
-        _motor_vel_sub = _nh->subscribe("motor_velocities", 5, &UDPCom::_motor_velocity_cb, this);
+        _motor_vel_sub = _nh->subscribe("set_velocities", 5, &UDPCom::_motor_velocity_cb, this);
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 5);
         _enable_ir_srv = _nh->advertiseService("enable_ir", &UDPCom::_enable_ir_srv_cb, this);
     }
