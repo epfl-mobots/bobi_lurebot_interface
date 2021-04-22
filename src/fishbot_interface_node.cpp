@@ -120,7 +120,7 @@ protected:
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "bobi_fishbot_interface");
+    ros::init(argc, argv, "fishbot_interface_node");
     std::shared_ptr<ros::NodeHandle> nh(new ros::NodeHandle());
 
     FishbotConfig cfg = get_fishbot_config(nh);

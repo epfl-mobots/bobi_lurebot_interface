@@ -2,10 +2,11 @@
 
 #include <bobi_msgs/MotorVelocities.h>
 #include <bobi_msgs/ProximitySensors.h>
-#include <geometry_msgs/Twist.h>
+#include <bobi_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <tf/tf.h>
 
 #include <iostream>
-#include <sstream>
 
 class DummyFishbotInterface {
 public:
@@ -18,6 +19,9 @@ public:
 
         // TODO: not implemented yet
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 5);
+
+        _pose_pub = nh->advertise<bobi_msgs::PoseStamped>("robot_pose", 5);
+        _odom_sub = _nh->subscribe("odom", 5, &DummyFishbotInterface::_odom_cb, this);
     }
 
 protected:
@@ -34,15 +38,37 @@ protected:
         _cmd_vel_pub.publish(msg);
     }
 
+    void _odom_cb(const nav_msgs::Odometry::ConstPtr& msg)
+    {
+        bobi_msgs::PoseStamped pose;
+        pose.pose.xyz.x = msg->pose.pose.position.x;
+        pose.pose.xyz.y = msg->pose.pose.position.y;
+        pose.pose.xyz.z = msg->pose.pose.position.z;
+
+        tf::Quaternion q(
+            msg->pose.pose.orientation.x,
+            msg->pose.pose.orientation.y,
+            msg->pose.pose.orientation.z,
+            msg->pose.pose.orientation.w);
+        tf::Matrix3x3 m(q);
+        m.getRPY(pose.pose.rpy.roll, pose.pose.rpy.pitch, pose.pose.rpy.yaw);
+
+        pose.header.stamp = ros::Time::now();
+        _pose_pub.publish(pose);
+    }
+
     std::shared_ptr<ros::NodeHandle> _nh;
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _cmd_vel_pub;
     ros::Publisher _proximity_sensor_pub;
+
+    ros::Subscriber _odom_sub;
+    ros::Publisher _pose_pub;
 };
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "bobi_fishbot_dummy_interface");
+    ros::init(argc, argv, "fishbot_dummy_interface_node");
     std::shared_ptr<ros::NodeHandle> nh(new ros::NodeHandle());
 
     DummyFishbotInterface fishbot(nh);
