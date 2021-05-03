@@ -13,15 +13,15 @@ public:
     DummyFishbotInterface(std::shared_ptr<ros::NodeHandle> nh)
         : _nh(nh)
     {
-        _motor_vel_sub = _nh->subscribe("set_velocities", 5, &DummyFishbotInterface::_motor_velocity_cb, this);
+        _motor_vel_sub = _nh->subscribe("set_velocities", 1, &DummyFishbotInterface::_motor_velocity_cb, this);
 
-        _cmd_vel_pub = nh->advertise<geometry_msgs::Twist>("cmd_vel", 5);
+        _cmd_vel_pub = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
         // TODO: not implemented yet
-        _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 5);
+        _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
 
-        _pose_pub = nh->advertise<bobi_msgs::PoseStamped>("robot_pose", 5);
-        _odom_sub = _nh->subscribe("odom", 5, &DummyFishbotInterface::_odom_cb, this);
+        _pose_pub = nh->advertise<bobi_msgs::PoseStamped>("robot_pose", 1);
+        _odom_sub = _nh->subscribe("odom", 1, &DummyFishbotInterface::_odom_cb, this);
     }
 
 protected:
@@ -32,6 +32,7 @@ protected:
         double l = 0.0451; // This is the distance between the wheels for the fisbot_v5
         double w = (Vr - Vl) / l; // angular velocity
         double v = (Vr + Vl) / 2;
+
         geometry_msgs::Twist msg;
         msg.linear.x = v;
         msg.angular.z = w;
