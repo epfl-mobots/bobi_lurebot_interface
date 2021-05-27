@@ -1,4 +1,4 @@
-led_colour: [0, 0, 255]
+led_colour: [129, 135, 222]
 ip: 192.168.0.157
 port: 5623
 rate: 30
