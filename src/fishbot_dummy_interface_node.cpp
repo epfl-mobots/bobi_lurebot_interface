@@ -3,6 +3,7 @@
 #include <bobi_msgs/MotorVelocities.h>
 #include <bobi_msgs/ProximitySensors.h>
 #include <bobi_msgs/PoseStamped.h>
+#include <bobi_msgs/PoseVec.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/tf.h>
 
@@ -20,7 +21,7 @@ public:
         // TODO: not implemented yet
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
 
-        _pose_pub = nh->advertise<bobi_msgs::PoseStamped>("robot_pose", 1);
+        _pose_pub = nh->advertise<bobi_msgs::PoseVec>("robot_poses", 1);
         _odom_sub = _nh->subscribe("odom", 1, &DummyFishbotInterface::_odom_cb, this);
     }
 
@@ -55,7 +56,9 @@ protected:
         m.getRPY(pose.pose.rpy.roll, pose.pose.rpy.pitch, pose.pose.rpy.yaw);
 
         pose.header.stamp = ros::Time::now();
-        _pose_pub.publish(pose);
+        bobi_msgs::PoseVec pv;
+        pv.poses.push_back(pose);
+        _pose_pub.publish(pv);
     }
 
     std::shared_ptr<ros::NodeHandle> _nh;

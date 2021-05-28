@@ -3,4 +3,4 @@ port: 5623
 rate: 30
 enable_ir: False
 max_acceleration: 1.75
-id: 0
+robot_id: 0
