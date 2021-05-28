@@ -1,6 +1,6 @@
-led_colour: [129, 135, 222]
 ip: 192.168.0.157
 port: 5623
 rate: 30
 enable_ir: False
 max_acceleration: 1.75
+id: 0
