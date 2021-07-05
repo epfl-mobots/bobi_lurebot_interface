@@ -9,8 +9,10 @@
 #include <bobi_msgs/PoseVec.h>
 #include <bobi_msgs/MotorVelocities.h>
 #include <bobi_msgs/EnableIR.h>
+#include <bobi_msgs/EnableTemp.h>
 #include <bobi_msgs/MaxAcceleration.h>
 #include <bobi_msgs/ProximitySensors.h>
+#include <bobi_msgs/TemperatureSensors.h>
 
 #include <iostream>
 #include <sstream>
@@ -26,6 +28,7 @@ struct FishbotConfig {
     int port = 5623;
     int rate = 30;
     bool enable_ir = false;
+    bool enable_temp = false;
     double max_acceleration = 1.75;
 };
 
@@ -37,6 +40,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<int>("port", cfg.port, cfg.port);
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
+    nh->param<bool>("enable_ir", cfg.enable_temp, cfg.enable_temp);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
     return cfg;
 }
@@ -50,10 +54,13 @@ public:
           _endpoint(boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(_cfg.ip), _cfg.port))
     {
         _enable_ir = cfg.enable_ir;
+        _enable_temp = cfg.enable_temp;
         _socket.open(boost::asio::ip::udp::v4());
-        _motor_vel_sub = _nh->subscribe("set_velocities", 5, &UDPCom::_motor_velocity_cb, this);
-        _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 5);
+        _motor_vel_sub = _nh->subscribe("set_velocities", 3, &UDPCom::_motor_velocity_cb, this);
+        _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
+        _temperature_sensor_pub = nh->advertise<bobi_msgs::TemperatureSensors>("temperature_sensors", 1);
         _enable_ir_srv = _nh->advertiseService("enable_ir", &UDPCom::_enable_ir_srv_cb, this);
+        _enable_temp_srv = _nh->advertiseService("enable_temp", &UDPCom::_enable_temp_srv_cb, this);
         _set_max_accel_srv = _nh->advertiseService("set_max_acceleration", &UDPCom::_set_max_accel_srv_cb, this);
 
         // initialize json doc
@@ -63,7 +70,12 @@ public:
 
         _json_doc.AddMember("vl", 0., allocator);
         _json_doc.AddMember("vr", 0., allocator);
-        _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
+        if (_enable_ir) {
+            _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
+        }
+        if (_enable_temp) {
+            _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
+        }
         _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
     }
 
@@ -83,17 +95,30 @@ protected:
     {
         boost::array<char, 64> resp;
         size_t len = _socket.receive_from(boost::asio::buffer(resp), _endpoint);
-        std::string proximity_msg(resp.begin(), resp.begin() + len);
+        std::string response(resp.begin(), resp.begin() + len);
 
-        std::vector<std::string> values_str;
-        boost::split(values_str, proximity_msg, [](char c) { return c == ':'; });
+        rpj::Document resp_json_doc;
+        resp_json_doc.Parse(response.c_str());
 
-        bobi_msgs::ProximitySensors ps;
-        ps.header.stamp = ros::Time::now();
-        std::transform(values_str.begin(), values_str.end(), std::back_inserter(ps.values),
-            [](const std::string& str) { return std::stoi(str); });
+        if (resp_json_doc.HasMember("ir")) {
+            const rpj::Value& values = resp_json_doc["ir"];
+            bobi_msgs::ProximitySensors ps;
+            ps.header.stamp = ros::Time::now();
+            for (rpj::SizeType i = 0; i < values.Size(); i++) {
+                ps.values.push_back(values[i].GetInt());
+            }
+            _proximity_sensor_pub.publish(ps);
+        }
 
-        _proximity_sensor_pub.publish(ps);
+        if (resp_json_doc.HasMember("temp")) {
+            const rpj::Value& values = resp_json_doc["temp"];
+            bobi_msgs::TemperatureSensors ts;
+            ts.header.stamp = ros::Time::now();
+            for (rpj::SizeType i = 0; i < values.Size(); i++) {
+                ts.values.push_back(values[i].GetFloat());
+            }
+            _temperature_sensor_pub.publish(ts);
+        }
     }
 
     void _motor_velocity_cb(const bobi_msgs::MotorVelocities::ConstPtr& motor_velocities)
@@ -103,15 +128,43 @@ protected:
 
         _json_doc["vl"].SetFloat(left_motor_cm_per_s);
         _json_doc["vr"].SetFloat(right_motor_cm_per_s);
-        _json_doc["ir"].SetBool(_enable_ir);
+
+        if (_enable_ir) {
+            if (!_json_doc.HasMember("ir")) {
+                _json_doc.AddMember("ir", _cfg.enable_ir, _json_doc.GetAllocator());
+            }
+            _json_doc["ir"].SetBool(_enable_ir);
+        }
+        else if (_json_doc.HasMember("ir")) {
+            _json_doc["ir"].SetBool(_enable_ir);
+        }
+
+        if (_enable_temp) {
+            if (!_json_doc.HasMember("temp")) {
+                _json_doc.AddMember("temp", _cfg.enable_temp, _json_doc.GetAllocator());
+            }
+            _json_doc["temp"].SetBool(_enable_temp);
+        }
+        else if (_json_doc.HasMember("temp")) {
+            _json_doc["temp"].SetBool(_enable_temp);
+        }
+
         _json_doc["a"].SetFloat(_cfg.max_acceleration);
 
         rpj::StringBuffer cmd_json;
         rpj::Writer<rpj::StringBuffer> writer(cmd_json);
         _json_doc.Accept(writer);
 
+        if (!_enable_ir && _json_doc.HasMember("ir")) {
+            _json_doc.RemoveMember("ir");
+        }
+
+        if (!_enable_temp && _json_doc.HasMember("temp")) {
+            _json_doc.RemoveMember("temp");
+        }
+
         send(cmd_json.GetString());
-        if (_enable_ir) {
+        if (_enable_ir || _enable_temp) {
             _receive();
         }
     }
@@ -122,6 +175,15 @@ protected:
     {
         _enable_ir = req.enable;
         _cfg.enable_ir = _enable_ir;
+        return true;
+    }
+
+    bool _enable_temp_srv_cb(
+        bobi_msgs::EnableTemp::Request& req,
+        bobi_msgs::EnableTemp::Response& res)
+    {
+        _enable_temp = req.enable;
+        _cfg.enable_temp = _enable_temp;
         return true;
     }
 
@@ -140,9 +202,12 @@ protected:
     boost::asio::ip::udp::endpoint _endpoint;
 
     std::atomic<bool> _enable_ir;
+    std::atomic<bool> _enable_temp;
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _proximity_sensor_pub;
+    ros::Publisher _temperature_sensor_pub;
     ros::ServiceServer _enable_ir_srv;
+    ros::ServiceServer _enable_temp_srv;
     ros::ServiceServer _set_max_accel_srv;
 
     rpj::Document _json_doc;

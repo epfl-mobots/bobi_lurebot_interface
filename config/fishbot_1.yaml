@@ -2,5 +2,6 @@ ip: 192.168.0.157
 port: 5623
 rate: 30
 enable_ir: False
+enable_temp: False
 max_acceleration: 1.75
 robot_id: 0
