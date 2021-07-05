@@ -11,6 +11,7 @@
 #include <bobi_msgs/EnableIR.h>
 #include <bobi_msgs/EnableTemp.h>
 #include <bobi_msgs/MaxAcceleration.h>
+#include <bobi_msgs/MaxTemperature.h>
 #include <bobi_msgs/ProximitySensors.h>
 #include <bobi_msgs/TemperatureSensors.h>
 
@@ -30,6 +31,7 @@ struct FishbotConfig {
     bool enable_ir = false;
     bool enable_temp = false;
     double max_acceleration = 1.75;
+    double max_temperature = 100.0;
 };
 
 FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
@@ -42,6 +44,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
     nh->param<bool>("enable_ir", cfg.enable_temp, cfg.enable_temp);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
+    nh->param<double>("max_temperature", cfg.max_temperature, cfg.max_temperature);
     return cfg;
 }
 
@@ -62,6 +65,7 @@ public:
         _enable_ir_srv = _nh->advertiseService("enable_ir", &UDPCom::_enable_ir_srv_cb, this);
         _enable_temp_srv = _nh->advertiseService("enable_temp", &UDPCom::_enable_temp_srv_cb, this);
         _set_max_accel_srv = _nh->advertiseService("set_max_acceleration", &UDPCom::_set_max_accel_srv_cb, this);
+        _set_max_temp_srv = _nh->advertiseService("set_max_temperature", &UDPCom::_set_max_temp_srv_cb, this);
 
         // initialize json doc
         _json_doc.SetObject();
@@ -77,6 +81,7 @@ public:
             _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
         }
         _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
+        _json_doc.AddMember("max_temp", _cfg.max_temperature, allocator);
     }
 
     void send(std::string command)
@@ -150,6 +155,7 @@ protected:
         }
 
         _json_doc["a"].SetFloat(_cfg.max_acceleration);
+        _json_doc["max_temp"].SetFloat(_cfg.max_temperature);
 
         rpj::StringBuffer cmd_json;
         rpj::Writer<rpj::StringBuffer> writer(cmd_json);
@@ -195,6 +201,14 @@ protected:
         return true;
     }
 
+    bool _set_max_temp_srv_cb(
+        bobi_msgs::MaxTemperature::Request& req,
+        bobi_msgs::MaxTemperature::Response& res)
+    {
+        _cfg.max_temperature = req.threshold;
+        return true;
+    }
+
     std::shared_ptr<ros::NodeHandle> _nh;
     FishbotConfig _cfg;
     boost::asio::io_service _io_service;
@@ -209,6 +223,7 @@ protected:
     ros::ServiceServer _enable_ir_srv;
     ros::ServiceServer _enable_temp_srv;
     ros::ServiceServer _set_max_accel_srv;
+    ros::ServiceServer _set_max_temp_srv;
 
     rpj::Document _json_doc;
 };

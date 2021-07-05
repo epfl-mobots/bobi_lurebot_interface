@@ -4,4 +4,5 @@ rate: 30
 enable_ir: False
 enable_temp: False
 max_acceleration: 1.75
+max_temperature: 100.0
 robot_id: 0
