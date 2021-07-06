@@ -94,31 +94,39 @@ public:
 protected:
     void _receive()
     {
-        boost::array<char, 64> resp;
+        boost::array<char, 128> resp;
         size_t len = _socket.receive_from(boost::asio::buffer(resp), _endpoint);
         std::string response(resp.begin(), resp.begin() + len);
 
-        rpj::Document resp_json_doc;
-        resp_json_doc.Parse(response.c_str());
+        if (response.size()) {
+            rpj::Document resp_json_doc;
+            resp_json_doc.Parse(response.c_str());
 
-        if (resp_json_doc.HasMember("ir")) {
-            const rpj::Value& values = resp_json_doc["ir"];
-            bobi_msgs::ProximitySensors ps;
-            ps.header.stamp = ros::Time::now();
-            for (rpj::SizeType i = 0; i < values.Size(); i++) {
-                ps.values.push_back(values[i].GetInt());
+            if (resp_json_doc.HasMember("ir")) {
+                const rpj::Value& values = resp_json_doc["ir"];
+                bobi_msgs::ProximitySensors ps;
+                ps.header.stamp = ros::Time::now();
+                for (rpj::SizeType i = 0; i < values.Size(); i++) {
+                    ps.values.push_back(values[i].GetInt());
+                }
+                _proximity_sensor_pub.publish(ps);
             }
-            _proximity_sensor_pub.publish(ps);
-        }
 
-        if (resp_json_doc.HasMember("temp")) {
-            const rpj::Value& values = resp_json_doc["temp"];
-            bobi_msgs::TemperatureSensors ts;
-            ts.header.stamp = ros::Time::now();
-            for (rpj::SizeType i = 0; i < values.Size(); i++) {
-                ts.values.push_back(values[i].GetFloat());
+            if (resp_json_doc.HasMember("temp")) {
+                const rpj::Value& values = resp_json_doc["temp"];
+                bobi_msgs::TemperatureSensors ts;
+                ts.header.stamp = ros::Time::now();
+                for (rpj::SizeType i = 0; i < values.Size(); i++) {
+                    ts.values.push_back(values[i].GetFloat());
+                }
+                _temperature_sensor_pub.publish(ts);
             }
-            _temperature_sensor_pub.publish(ts);
+
+            if (resp_json_doc.HasMember("vl") && resp_json_doc.HasMember("vr")) {
+                const rpj::Value& vl = resp_json_doc["vl"];
+                const rpj::Value& vr = resp_json_doc["vr"];
+                ROS_INFO("Robot is reporting (vl, vr) = (%f, %f)", vl.GetFloat(), vr.GetFloat());
+            }
         }
     }
 
@@ -139,9 +147,7 @@ protected:
         _json_doc.Accept(writer);
 
         send(cmd_json.GetString());
-        if (_enable_ir || _enable_temp) {
-            _receive();
-        }
+        _receive();
     }
 
     bool _enable_ir_srv_cb(
