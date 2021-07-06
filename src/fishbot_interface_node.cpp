@@ -59,7 +59,7 @@ public:
         _enable_ir = cfg.enable_ir;
         _enable_temp = cfg.enable_temp;
         _socket.open(boost::asio::ip::udp::v4());
-        _motor_vel_sub = _nh->subscribe("set_velocities", 3, &UDPCom::_motor_velocity_cb, this);
+        _motor_vel_sub = _nh->subscribe("set_velocities", 1, &UDPCom::_motor_velocity_cb, this);
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
         _temperature_sensor_pub = nh->advertise<bobi_msgs::TemperatureSensors>("temperature_sensors", 1);
         _enable_ir_srv = _nh->advertiseService("enable_ir", &UDPCom::_enable_ir_srv_cb, this);
@@ -74,12 +74,8 @@ public:
 
         _json_doc.AddMember("vl", 0., allocator);
         _json_doc.AddMember("vr", 0., allocator);
-        if (_enable_ir) {
-            _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
-        }
-        if (_enable_temp) {
-            _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
-        }
+        _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
+        _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
         _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
         _json_doc.AddMember("max_temp", _cfg.max_temperature, allocator);
     }
@@ -133,41 +129,14 @@ protected:
 
         _json_doc["vl"].SetFloat(left_motor_cm_per_s);
         _json_doc["vr"].SetFloat(right_motor_cm_per_s);
-
-        if (_enable_ir) {
-            if (!_json_doc.HasMember("ir")) {
-                _json_doc.AddMember("ir", _cfg.enable_ir, _json_doc.GetAllocator());
-            }
-            _json_doc["ir"].SetBool(_enable_ir);
-        }
-        else if (_json_doc.HasMember("ir")) {
-            _json_doc["ir"].SetBool(_enable_ir);
-        }
-
-        if (_enable_temp) {
-            if (!_json_doc.HasMember("temp")) {
-                _json_doc.AddMember("temp", _cfg.enable_temp, _json_doc.GetAllocator());
-            }
-            _json_doc["temp"].SetBool(_enable_temp);
-        }
-        else if (_json_doc.HasMember("temp")) {
-            _json_doc["temp"].SetBool(_enable_temp);
-        }
-
+        _json_doc["ir"].SetBool(_enable_ir);
+        _json_doc["temp"].SetBool(_enable_temp);
         _json_doc["a"].SetFloat(_cfg.max_acceleration);
         _json_doc["max_temp"].SetFloat(_cfg.max_temperature);
 
         rpj::StringBuffer cmd_json;
         rpj::Writer<rpj::StringBuffer> writer(cmd_json);
         _json_doc.Accept(writer);
-
-        if (!_enable_ir && _json_doc.HasMember("ir")) {
-            _json_doc.RemoveMember("ir");
-        }
-
-        if (!_enable_temp && _json_doc.HasMember("temp")) {
-            _json_doc.RemoveMember("temp");
-        }
 
         send(cmd_json.GetString());
         if (_enable_ir || _enable_temp) {
