@@ -17,6 +17,7 @@
 #include <bobi_msgs/MaxTemperature.h>
 #include <bobi_msgs/ProximitySensors.h>
 #include <bobi_msgs/TemperatureSensors.h>
+#include <bobi_msgs/HighCurrent.h>
 
 #include <iostream>
 #include <sstream>
@@ -39,6 +40,7 @@ struct FishbotConfig {
     bool ret_vel = false;
     double max_acceleration = 1.75;
     double max_temperature = 100.0;
+    bool high_current = false;
 };
 
 FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
@@ -53,6 +55,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<bool>("return_velocity", cfg.ret_vel, cfg.ret_vel);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
     nh->param<double>("max_temperature", cfg.max_temperature, cfg.max_temperature);
+    nh->param<bool>("high_current", cfg.high_current, cfg.high_current);
     return cfg;
 }
 
@@ -67,6 +70,7 @@ public:
         _enable_ir = cfg.enable_ir;
         _enable_temp = cfg.enable_temp;
         _ret_vel = cfg.ret_vel;
+        _high_current = cfg.high_current;
         _motor_vel_sub = _nh->subscribe("set_velocities", 1, &UDPCom::_motor_velocity_cb, this);
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
         _temperature_sensor_pub = nh->advertise<bobi_msgs::TemperatureSensors>("temperature_sensors", 1);
@@ -76,6 +80,7 @@ public:
         _enable_ret_vel_srv = _nh->advertiseService("ret_vel", &UDPCom::_enable_ret_vel_srv_cb, this);
         _set_max_accel_srv = _nh->advertiseService("set_max_acceleration", &UDPCom::_set_max_accel_srv_cb, this);
         _set_max_temp_srv = _nh->advertiseService("set_max_temperature", &UDPCom::_set_max_temp_srv_cb, this);
+        _set_high_current_srv = _nh->advertiseService("set_high_current", &UDPCom::_set_high_current_srv_cb, this);
 
         // initialize json doc
         _json_doc.SetObject();
@@ -89,6 +94,7 @@ public:
         _json_doc.AddMember("ret_vel", _cfg.ret_vel, allocator);
         _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
         _json_doc.AddMember("max_temp", _cfg.max_temperature, allocator);
+        _json_doc.AddMember("high_current", _cfg.high_current, allocator);
 
         _socket.open(boost::asio::ip::udp::v4());
     }
@@ -168,6 +174,7 @@ protected:
         _json_doc["ret_vel"].SetBool(_ret_vel);
         _json_doc["a"].SetFloat(_cfg.max_acceleration);
         _json_doc["max_temp"].SetFloat(_cfg.max_temperature);
+        _json_doc["high_current"].SetBool(_high_current);
 
         rpj::StringBuffer cmd_json;
         rpj::Writer<rpj::StringBuffer> writer(cmd_json);
@@ -223,6 +230,15 @@ protected:
         return true;
     }
 
+    bool _set_high_current_srv_cb(
+        bobi_msgs::HighCurrent::Request& req,
+        bobi_msgs::HighCurrent::Response& res)
+    {
+        _high_current = true;
+        _cfg.high_current = req.enable;
+        return true;
+    }
+
     std::shared_ptr<ros::NodeHandle> _nh;
     FishbotConfig _cfg;
     boost::asio::io_service _io_service;
@@ -233,6 +249,7 @@ protected:
     std::atomic<bool> _enable_ir;
     std::atomic<bool> _enable_temp;
     std::atomic<bool> _ret_vel;
+    std::atomic<bool> _high_current;
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _proximity_sensor_pub;
     ros::Publisher _temperature_sensor_pub;
@@ -242,6 +259,7 @@ protected:
     ros::ServiceServer _enable_ret_vel_srv;
     ros::ServiceServer _set_max_accel_srv;
     ros::ServiceServer _set_max_temp_srv;
+    ros::ServiceServer _set_high_current_srv;
 
     ros::Time _prev_header;
 

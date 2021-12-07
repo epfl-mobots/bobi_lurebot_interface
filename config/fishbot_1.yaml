@@ -6,4 +6,5 @@ enable_temp: False
 return_velocity: False
 max_acceleration: 1.75
 max_temperature: 95.0
+high_current: False
 robot_id: 0
