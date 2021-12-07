@@ -182,9 +182,9 @@ protected:
         _json_doc.Accept(writer);
 
         send(cmd_json.GetString());
-        if (_enable_ir || _enable_temp || _ret_vel) {
-            _receive();
-        }
+        // if (_enable_ir || _enable_temp || _ret_vel) {
+        _receive();
+        // }
     }
 
     bool _enable_ir_srv_cb(
@@ -234,8 +234,8 @@ protected:
         bobi_msgs::HighCurrent::Request& req,
         bobi_msgs::HighCurrent::Response& res)
     {
-        _high_current = true;
-        _cfg.high_current = req.enable;
+        _high_current = req.enable;
+        _cfg.high_current = _high_current;
         return true;
     }
 
