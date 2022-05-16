@@ -72,7 +72,7 @@ private:
 
 struct FishbotConfig {
     std::vector<double> led_colour = {0, 0, 255};
-    std::string bt_serial = "/dev/ttyS0";
+    std::string bt_serial = "/dev/rfcomm0";
     int rate = 30;
     bool enable_ir = false;
     bool enable_temp = false;
@@ -123,12 +123,12 @@ public:
 
         _json_doc.AddMember("vl", 0., allocator);
         _json_doc.AddMember("vr", 0., allocator);
-        _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
-        _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
-        _json_doc.AddMember("ret_vel", _cfg.ret_vel, allocator);
-        _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
-        _json_doc.AddMember("max_temp", _cfg.max_temperature, allocator);
-        _json_doc.AddMember("high_current", _cfg.high_current, allocator);
+        // _json_doc.AddMember("ir", _cfg.enable_ir, allocator);
+        // _json_doc.AddMember("temp", _cfg.enable_temp, allocator);
+        // _json_doc.AddMember("ret_vel", _cfg.ret_vel, allocator);
+        // _json_doc.AddMember("a", _cfg.max_acceleration, allocator);
+        // _json_doc.AddMember("max_temp", _cfg.max_temperature, allocator);
+        // _json_doc.AddMember("high_current", _cfg.high_current, allocator);
     }
 
     void communicate()
@@ -141,6 +141,7 @@ public:
             writer.SetMaxDecimalPlaces(2);
             _json_doc.Accept(writer);
             _ss.write(cmd_json.GetString());
+            ROS_INFO("Sending %s", cmd_json.GetString());
         }
 
         // receive robot feedback if enabled

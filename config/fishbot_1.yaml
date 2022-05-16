@@ -1,4 +1,4 @@
-bt_serial: /dev/ttyS0"
+bt_serial: /dev/rfcomm0
 rate: 30
 enable_ir: False
 enable_temp: False
