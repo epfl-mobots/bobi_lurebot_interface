@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(bobi_fishbot_interface)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++17)
 
 find_package(
     catkin REQUIRED COMPONENTS
@@ -16,9 +16,12 @@ catkin_package(
   CATKIN_DEPENDS bobi_msgs
 )
 
+add_subdirectory(deps/SimpleBLE ${CMAKE_BINARY_DIR}/simpleble)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${SIMPLEBLE_INCLUDES}
 )
 
 add_executable(fishbot_interface_node src/fishbot_interface_node.cpp)

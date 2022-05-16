@@ -1,9 +1,6 @@
-bt_serial: /dev/rfcomm0
-rate: 30
+rate: 65
 enable_ir: False
-enable_temp: False
 ret_vel: False
 max_acceleration: 1.75
-max_temperature: 95.0
-high_current: False
+pwm_duty_cycle_perc: 33
 robot_id: 0
