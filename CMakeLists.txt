@@ -25,7 +25,7 @@ include_directories(
 )
 
 add_executable(fishbot_interface_node src/fishbot_interface_node.cpp)
-target_link_libraries(fishbot_interface_node ${catkin_LIBRARIES})
+target_link_libraries(fishbot_interface_node ${catkin_LIBRARIES} simpleble)
 add_dependencies(fishbot_interface_node ${catkin_EXPORTED_TARGETS}  bobi_msgs_generate_messages_cpp)
 
 add_executable(fishbot_dummy_interface_node src/fishbot_dummy_interface_node.cpp)
