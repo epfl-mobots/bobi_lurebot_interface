@@ -272,15 +272,15 @@ int main(int argc, char** argv)
 
     ros::Rate loop_rate(cfg.rate);
     while (ros::ok()) {
-        auto loop_start = std::chrono::high_resolution_clock::now();
+        // auto loop_start = std::chrono::high_resolution_clock::now();
 
         blei.refresh();
         ros::spinOnce();
         loop_rate.sleep();
 
-        auto loop_stop = std::chrono::high_resolution_clock::now();
-        std::chrono::microseconds loop_time = std::chrono::duration_cast<std::chrono::microseconds>(loop_stop - loop_start);
-        ROS_INFO("Loop time: %ld", loop_time.count());
+        // auto loop_stop = std::chrono::high_resolution_clock::now();
+        // std::chrono::microseconds loop_time = std::chrono::duration_cast<std::chrono::microseconds>(loop_stop - loop_start);
+        // ROS_INFO("Loop time: %ld", loop_time.count());
     }
 
     return 0;
