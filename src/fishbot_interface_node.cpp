@@ -40,7 +40,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
     nh->param<bool>("ret_vel", cfg.ret_vel, cfg.ret_vel);
-    nh->param<bool>("ret_dropped_msgs", cfg.ret_vel, cfg.ret_vel);
+    nh->param<bool>("ret_dropped_msgs", cfg.ret_dropped_msgs, cfg.ret_dropped_msgs);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
     nh->param<int>("pwm_duty_cycle_perc", cfg.pwm_duty_cycle_perc, cfg.pwm_duty_cycle_perc);
     nh->param<int>("bt_adapter", cfg.bt_adapter, cfg.bt_adapter);
@@ -60,7 +60,6 @@ public:
         // subs/pubs
         _motor_vel_sub = _nh->subscribe("set_velocities", 1, &BLEInterface::_motor_velocity_cb, this);
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
-        _reported_velocities_pub = nh->advertise<bobi_msgs::MotorVelocities>("reported_velocities", 1);
         _dropped_msgs_pub = nh->advertise<bobi_msgs::DroppedMessages>("dropped_msgs", 1);
         _current_motor_vel_pub = nh->advertise<bobi_msgs::MotorVelocities>("current_velocities", 1);
 
@@ -273,7 +272,6 @@ protected:
     ros::Publisher _current_motor_vel_pub;
     ros::Publisher _dropped_msgs_pub;
     ros::Publisher _proximity_sensor_pub;
-    ros::Publisher _reported_velocities_pub;
     ros::ServiceServer _enable_ir_srv;
     ros::ServiceServer _enable_ret_vel_srv;
     ros::ServiceServer _enable_ret_dropped_msgs_srv;
