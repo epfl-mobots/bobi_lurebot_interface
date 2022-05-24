@@ -26,9 +26,10 @@
 struct FishbotConfig {
     int rate = 65;
     bool enable_ir = false;
-    bool ret_vel = false;
-    double max_acceleration = 1.75;
-    int pwm_duty_cycle_perc = 33;
+    bool ret_vel = true;
+    bool ret_dropped_msgs = true;
+    double max_acceleration = 1.0;
+    int pwm_duty_cycle_perc = 55;
     int bt_adapter = 0;
     std::string device_uuid;
 };
@@ -38,7 +39,8 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     FishbotConfig cfg;
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
-    nh->param<bool>("return_velocity", cfg.ret_vel, cfg.ret_vel);
+    nh->param<bool>("ret_vel", cfg.ret_vel, cfg.ret_vel);
+    nh->param<bool>("ret_dropped_msgs", cfg.ret_vel, cfg.ret_vel);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
     nh->param<int>("pwm_duty_cycle_perc", cfg.pwm_duty_cycle_perc, cfg.pwm_duty_cycle_perc);
     nh->param<int>("bt_adapter", cfg.bt_adapter, cfg.bt_adapter);
@@ -60,7 +62,7 @@ public:
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
         _reported_velocities_pub = nh->advertise<bobi_msgs::MotorVelocities>("reported_velocities", 1);
         _dropped_msgs_pub = nh->advertise<bobi_msgs::DroppedMessages>("dropped_msgs", 1);
-        _current_motor_vel_pub = nh->advertise<bobi_msgs::MotorVelocitiesStamped>("current_velocities", 1);
+        _current_motor_vel_pub = nh->advertise<bobi_msgs::MotorVelocities>("current_velocities", 1);
 
         // services
         _enable_ir_srv = _nh->advertiseService("enable_ir", &BLEInterface::_enable_ir_srv_cb, this);
@@ -90,6 +92,7 @@ public:
         assert(_peripheral.initialized());
         _peripheral.connect();
         _init_notifications();
+        _init_robot_cfg();
     }
 
     ~BLEInterface()
@@ -146,12 +149,28 @@ protected:
             MotorSpeeds msg;
             std::copy(bytes.begin(), bytes.end(), msg.bytes);
 
-            bobi_msgs::MotorVelocitiesStamped rosmsg;
-            rosmsg.header.stamp = ros::Time::now();
-            rosmsg.vel.left = toSigned<float>(msg.cmds[0]) / 10.;
-            rosmsg.vel.right = toSigned<float>(msg.cmds[1]) / 10.;
+            bobi_msgs::MotorVelocities rosmsg;
+            // divide by 1000, this is to convert from mm/s to m/s
+            rosmsg.left = toSigned<float>(msg.cmds[0]) / 1000.;
+            rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
             _current_motor_vel_pub.publish(rosmsg);
         });
+    }
+
+    void _init_robot_cfg()
+    {
+
+        if (_cfg.ret_vel) {
+            _enable_ret_vel(1);
+        }
+
+        if (_cfg.ret_dropped_msgs) {
+            _enable_dropped_msgs(1);
+        }
+
+        _set_max_accel(_cfg.max_acceleration * 100);
+        _set_duty_cycle(_cfg.pwm_duty_cycle_perc);
+        // TODO: enable ir
     }
 
     void _motor_velocity_cb(const bobi_msgs::MotorVelocities::ConstPtr& motor_velocities)
