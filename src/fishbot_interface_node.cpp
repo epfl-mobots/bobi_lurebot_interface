@@ -13,6 +13,7 @@
 #include <bobi_msgs/DutyCycle.h>
 
 #include <simpleble/SimpleBLE.h>
+#include <simpledbus/base/Exceptions.h>
 #include <bobi_fishbot_interface/fishbot_ble_details.hpp>
 
 #include <iostream>
@@ -225,35 +226,80 @@ private:
         const std::lock_guard<std::mutex> lock(_peripheral_lock);
         SimpleBLE::ByteArray bytes(sizeof(cmd.bytes));
         std::copy(cmd.bytes, cmd.bytes + sizeof(cmd.bytes), bytes.begin());
-        _peripheral.write_command(MOTOR_VEL_SRV_UUID, DESIRED_VEL_CHAR_UUID, bytes);
+
+        try {
+            _peripheral.write_command(MOTOR_VEL_SRV_UUID, DESIRED_VEL_CHAR_UUID, bytes);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (...) {
+            ROS_WARN("Caught exception, but skipping");
+        }
     }
 
     void _enable_ret_vel(uint8_t enable)
     {
         const std::lock_guard<std::mutex> lock(_peripheral_lock);
         SimpleBLE::ByteArray byte = {enable};
-        _peripheral.write_command(MOTOR_VEL_SRV_UUID, RETURN_CURRENT_VEL_CHAR_UUID, byte);
+
+        try {
+            _peripheral.write_command(MOTOR_VEL_SRV_UUID, RETURN_CURRENT_VEL_CHAR_UUID, byte);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (...) {
+            ROS_WARN("Caught exception, but skipping");
+        }
     }
 
     void _enable_dropped_msgs(uint8_t enable)
     {
         const std::lock_guard<std::mutex> lock(_peripheral_lock);
         SimpleBLE::ByteArray byte = {enable};
-        _peripheral.write_command(DROPPED_MSGS_SRV_UUID, RETURN_DROPPED_MSGS_CHAR_UUID, byte);
+
+        try {
+            _peripheral.write_command(DROPPED_MSGS_SRV_UUID, RETURN_DROPPED_MSGS_CHAR_UUID, byte);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (...) {
+            ROS_WARN("Caught exception, but skipping");
+        }
     }
 
     void _set_max_accel(uint8_t accel)
     {
         const std::lock_guard<std::mutex> lock(_peripheral_lock);
         SimpleBLE::ByteArray byte = {accel};
-        _peripheral.write_command(ACCEL_SRV_UUID, MAX_ACCEL_CHAR_UUID, byte);
+
+        try {
+            _peripheral.write_command(ACCEL_SRV_UUID, MAX_ACCEL_CHAR_UUID, byte);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (...) {
+            ROS_WARN("Caught exception, but skipping");
+        }
     }
 
     void _set_duty_cycle(uint8_t duty)
     {
         const std::lock_guard<std::mutex> lock(_peripheral_lock);
         SimpleBLE::ByteArray byte = {duty};
-        _peripheral.write_command(DUTY_CYCLE_SRV_UUID, SET_DUTY_CYCLE_CHAR_UUID, byte);
+
+        try {
+            _peripheral.write_command(DUTY_CYCLE_SRV_UUID, SET_DUTY_CYCLE_CHAR_UUID, byte);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (...) {
+            ROS_WARN("Caught exception, but skipping");
+        }
     }
 
 protected:

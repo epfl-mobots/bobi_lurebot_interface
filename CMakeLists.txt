@@ -22,6 +22,7 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${SIMPLEBLE_INCLUDES}
+  ${SIMPLEBLUEZ_INCLUDES}
 )
 
 add_executable(fishbot_interface_node src/fishbot_interface_node.cpp)
