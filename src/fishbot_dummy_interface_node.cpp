@@ -78,7 +78,7 @@ int main(int argc, char** argv)
     DummyFishbotInterface fishbot(nh);
 
     int rate;
-    nh->param<int>("rate", rate, 30);
+    nh->param<int>("dummy_interface_node/rate", rate, 30);
     ros::Rate loop_rate(rate);
     while (ros::ok()) {
         ros::spinOnce();

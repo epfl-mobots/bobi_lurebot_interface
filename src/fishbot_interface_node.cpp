@@ -108,9 +108,10 @@ public:
         cmd.cmds[0] = _id_counter;
         cmd.cmds[1] = toUnsigned<uint16_t>(_left_motor_cm_per_s * 10);
         cmd.cmds[2] = toUnsigned<uint16_t>(_right_motor_cm_per_s * 10);
+        // cmd.cmds[1] = toUnsigned<uint16_t>(0 + (std::rand() % (1000 - 0 + 1)) - 500);
+        // cmd.cmds[2] = toUnsigned<uint16_t>(0 + (std::rand() % (1000 - 0 + 1)) - 500);
         _send_velocities(cmd);
-
-        if (_id_counter == 100) {
+        if (_id_counter >= 100) {
             _id_counter = 0;
         }
         else {
@@ -233,8 +234,8 @@ private:
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
         }
-        catch (...) {
-            ROS_WARN("Caught exception, but skipping");
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
         }
     }
 
@@ -249,8 +250,8 @@ private:
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
         }
-        catch (...) {
-            ROS_WARN("Caught exception, but skipping");
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
         }
     }
 
@@ -265,8 +266,8 @@ private:
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
         }
-        catch (...) {
-            ROS_WARN("Caught exception, but skipping");
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
         }
     }
 
@@ -281,8 +282,8 @@ private:
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
         }
-        catch (...) {
-            ROS_WARN("Caught exception, but skipping");
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
         }
     }
 
@@ -297,8 +298,8 @@ private:
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
         }
-        catch (...) {
-            ROS_WARN("Caught exception, but skipping");
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
         }
     }
 

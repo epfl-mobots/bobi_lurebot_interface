@@ -33,8 +33,8 @@
 #define MOTOR_CVEL_CHAR_SIZE 4
 #define IR_VAL_CHAR_SIZE 4
 
-#define FISHBOT_NAME_BUF_SIZE 18
-#define FW_VERSION_BUF_SIZE 14
+#define FISHBOT_NAME_BUF_SIZE 20
+#define FW_VERSION_BUF_SIZE 15
 
 union MotorCmd {
     uint8_t bytes[MOTOR_VEL_CHAR_SIZE];
@@ -64,7 +64,7 @@ union FishbotFWVersion {
 template <typename UT, typename T>
 UT toSigned(T val)
 {
-    T mid = (std::numeric_limits<T>::max() - 1) / 2;
+    T mid = (std::numeric_limits<T>::max() - 1) / 2 + 1;
     UT v = (val >= mid) ? (UT)(val - mid) : (UT)val - (UT)mid;
     return v;
 }
@@ -72,7 +72,7 @@ UT toSigned(T val)
 template <typename UT, typename T>
 UT toUnsigned(const T val)
 {
-    UT mid = (std::numeric_limits<UT>::max() - 1) / 2;
+    UT mid = (std::numeric_limits<UT>::max() - 1) / 2 + 1;
     return val + mid;
 }
 
