@@ -29,6 +29,7 @@ struct FishbotConfig {
     bool enable_ir = false;
     bool ret_vel = true;
     bool ret_dropped_msgs = true;
+    bool check_heartbeat = true;
     double max_acceleration = 1.0;
     int pwm_duty_cycle_perc = 55;
     int bt_adapter = 0;
@@ -41,6 +42,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
     nh->param<bool>("ret_vel", cfg.ret_vel, cfg.ret_vel);
+    nh->param<bool>("check_heartbeat", cfg.check_heartbeat, cfg.check_heartbeat);
     nh->param<bool>("ret_dropped_msgs", cfg.ret_dropped_msgs, cfg.ret_dropped_msgs);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
     nh->param<int>("pwm_duty_cycle_perc", cfg.pwm_duty_cycle_perc, cfg.pwm_duty_cycle_perc);
@@ -156,6 +158,19 @@ protected:
             rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
             _current_motor_vel_pub.publish(rosmsg);
         });
+
+        if (_cfg.check_heartbeat) {
+            _peripheral.notify(HEARTBEAT_SRV_UUID, HEARTBEAT_CHAR_UUID, [&](SimpleBLE::ByteArray bytes) {
+                if (bytes.size()) {
+                    if (bytes[0]) {
+                        ROS_WARN("Heartbeat");
+                    }
+                    else {
+                        ROS_ERROR("No heartbeat");
+                    }
+                }
+            });
+        }
     }
 
     void _init_robot_cfg()
