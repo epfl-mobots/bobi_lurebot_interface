@@ -6,11 +6,13 @@
 #include <bobi_msgs/MotorVelocitiesStamped.h>
 #include <bobi_msgs/EnableIR.h>
 #include <bobi_msgs/ReturnVelocity.h>
+#include <bobi_msgs/ReturnTemperature.h>
 #include <bobi_msgs/ReturnDroppedMsgs.h>
 #include <bobi_msgs/MaxAcceleration.h>
 #include <bobi_msgs/ProximitySensors.h>
 #include <bobi_msgs/DroppedMessages.h>
 #include <bobi_msgs/DutyCycle.h>
+#include <bobi_msgs/Temperature.h>
 
 #include <simpleble/SimpleBLE.h>
 #include <simpledbus/base/Exceptions.h>
@@ -28,6 +30,7 @@ struct FishbotConfig {
     int rate = 65;
     bool enable_ir = false;
     bool ret_vel = true;
+    bool ret_temp = false;
     bool ret_dropped_msgs = true;
     bool check_heartbeat = true;
     double max_acceleration = 1.0;
@@ -42,6 +45,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
     nh->param<bool>("ret_vel", cfg.ret_vel, cfg.ret_vel);
+    nh->param<bool>("ret_temp", cfg.ret_temp, cfg.ret_temp);
     nh->param<bool>("check_heartbeat", cfg.check_heartbeat, cfg.check_heartbeat);
     nh->param<bool>("ret_dropped_msgs", cfg.ret_dropped_msgs, cfg.ret_dropped_msgs);
     nh->param<double>("max_acceleration", cfg.max_acceleration, cfg.max_acceleration);
@@ -65,10 +69,12 @@ public:
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
         _dropped_msgs_pub = nh->advertise<bobi_msgs::DroppedMessages>("dropped_msgs", 1);
         _current_motor_vel_pub = nh->advertise<bobi_msgs::MotorVelocities>("current_velocities", 1);
+        _current_temp_pub = nh->advertise<bobi_msgs::Temperature>("motor_temperature", 1);
 
         // services
         _enable_ir_srv = _nh->advertiseService("enable_ir", &BLEInterface::_enable_ir_srv_cb, this);
         _enable_ret_vel_srv = _nh->advertiseService("ret_vel", &BLEInterface::_enable_ret_vel_srv_cb, this);
+        _enable_ret_temp_srv = _nh->advertiseService("ret_temp", &BLEInterface::_enable_ret_temp_srv_cb, this);
         _enable_ret_dropped_msgs_srv = _nh->advertiseService("ret_dropped_msgs", &BLEInterface::_enable_ret_dropped_msgs_srv_cb, this);
         _set_max_accel_srv = _nh->advertiseService("set_max_acceleration", &BLEInterface::_set_max_accel_srv_cb, this);
         _set_duty_cycle_srv = _nh->advertiseService("set_duty_cycle", &BLEInterface::_set_duty_cycle_srv_cb, this);
@@ -128,35 +134,53 @@ protected:
         {
             FishbotName msg;
             SimpleBLE::ByteArray bytes = _peripheral.readBytes(INFO_SRV_UUID, DEVICE_NAME_CHAR_UUID);
-            std::copy(bytes.begin(), bytes.end(), msg.bytes);
-            ROS_INFO("\tName: %s", msg.cbytes);
+            if (bytes.size()) {
+                std::copy(bytes.begin(), bytes.end(), msg.bytes);
+                ROS_INFO("\tName: %s", msg.cbytes);
+            }
         }
         {
             FishbotFWVersion msg;
             SimpleBLE::ByteArray bytes = _peripheral.readBytes(INFO_SRV_UUID, FW_VERSION_CHAR_UUID);
-            std::copy(bytes.begin(), bytes.end(), msg.bytes);
-            ROS_INFO("\tFW version: %s", msg.cbytes);
+            if (bytes.size()) {
+                std::copy(bytes.begin(), bytes.end(), msg.bytes);
+                ROS_INFO("\tFW version: %s", msg.cbytes);
+            }
         }
 
         _peripheral.notify(DROPPED_MSGS_SRV_UUID, DROPPED_MSGS_COUNT_CHAR_UUID, [&](SimpleBLE::ByteArray bytes) {
-            DroppedMsg msg;
-            std::copy(bytes.begin(), bytes.end(), msg.bytes);
+            if (bytes.size()) {
+                DroppedMsg msg;
+                std::copy(bytes.begin(), bytes.end(), msg.bytes);
 
-            bobi_msgs::DroppedMessages rosmsg;
-            rosmsg.dropped = msg.counters[0];
-            rosmsg.total = msg.counters[1];
-            _dropped_msgs_pub.publish(rosmsg);
+                bobi_msgs::DroppedMessages rosmsg;
+                rosmsg.dropped = msg.counters[0];
+                rosmsg.total = msg.counters[1];
+                _dropped_msgs_pub.publish(rosmsg);
+            }
         });
 
         _peripheral.notify(MOTOR_VEL_SRV_UUID, CURRENT_VEL_CHAR_UUID, [&](SimpleBLE::ByteArray bytes) {
-            MotorSpeeds msg;
-            std::copy(bytes.begin(), bytes.end(), msg.bytes);
+            if (bytes.size()) {
+                MotorSpeeds msg;
+                std::copy(bytes.begin(), bytes.end(), msg.bytes);
 
-            bobi_msgs::MotorVelocities rosmsg;
-            // divide by 1000, this is to convert from mm/s to m/s
-            rosmsg.left = toSigned<float>(msg.cmds[0]) / 1000.;
-            rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
-            _current_motor_vel_pub.publish(rosmsg);
+                bobi_msgs::MotorVelocities rosmsg;
+                // divide by 1000, this is to convert from mm/s to m/s
+                rosmsg.left = toSigned<float>(msg.cmds[0]) / 1000.;
+                rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
+                _current_motor_vel_pub.publish(rosmsg);
+            }
+        });
+
+        _peripheral.notify(TEMPERATURE_SRV_UUID, TEMPERATURE_CHAR_UUID, [&](SimpleBLE::ByteArray bytes) {
+            if (bytes.size()) {
+                Temperature msg;
+                std::copy(bytes.begin(), bytes.end(), msg.bytes);
+                bobi_msgs::Temperature rosmsg;
+                rosmsg.temp = toSigned<float>(msg.cmds[0]) / 10.;
+                _current_temp_pub.publish(rosmsg);
+            }
         });
 
         if (_cfg.check_heartbeat) {
@@ -178,6 +202,10 @@ protected:
 
         if (_cfg.ret_vel) {
             _enable_ret_vel(1);
+        }
+
+        if (_cfg.ret_temp) {
+            _enable_ret_temp(1);
         }
 
         if (_cfg.ret_dropped_msgs) {
@@ -209,6 +237,14 @@ protected:
         bobi_msgs::ReturnVelocity::Response& res)
     {
         _enable_ret_vel(req.enable);
+        return true;
+    }
+
+    bool _enable_ret_temp_srv_cb(
+        bobi_msgs::ReturnTemperature::Request& req,
+        bobi_msgs::ReturnTemperature::Response& res)
+    {
+        _enable_ret_temp(req.enable);
         return true;
     }
 
@@ -261,6 +297,22 @@ private:
 
         try {
             _peripheral.write_command(MOTOR_VEL_SRV_UUID, RETURN_CURRENT_VEL_CHAR_UUID, byte);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            ROS_WARN("Send timed out: %s", e.what());
+        }
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
+        }
+    }
+
+    void _enable_ret_temp(uint8_t enable)
+    {
+        const std::lock_guard<std::mutex> lock(_peripheral_lock);
+        SimpleBLE::ByteArray byte = {enable};
+
+        try {
+            _peripheral.write_command(TEMPERATURE_SRV_UUID, RETURN_CURRENT_TEMP_CHAR_UUID, byte);
         }
         catch (SimpleDBus::Exception::SendFailed& e) {
             ROS_WARN("Send timed out: %s", e.what());
@@ -332,10 +384,12 @@ protected:
 
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _current_motor_vel_pub;
+    ros::Publisher _current_temp_pub;
     ros::Publisher _dropped_msgs_pub;
     ros::Publisher _proximity_sensor_pub;
     ros::ServiceServer _enable_ir_srv;
     ros::ServiceServer _enable_ret_vel_srv;
+    ros::ServiceServer _enable_ret_temp_srv;
     ros::ServiceServer _enable_ret_dropped_msgs_srv;
     ros::ServiceServer _set_max_accel_srv;
     ros::ServiceServer _set_duty_cycle_srv;

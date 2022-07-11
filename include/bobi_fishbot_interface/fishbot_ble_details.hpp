@@ -30,11 +30,16 @@
 #define HEARTBEAT_SRV_UUID "f506221e-4c45-4994-b3d0-9a78863c64b7"
 #define HEARTBEAT_CHAR_UUID "1beb96cc-e84d-44dc-82be-0dbea32c1f4c"
 
+#define TEMPERATURE_SRV_UUID "1d129153-2148-4770-90f2-277555ab7fd1"
+#define RETURN_CURRENT_TEMP_CHAR_UUID "2990fb43-e65c-4543-adcd-2b57d0a9aeb8"
+#define TEMPERATURE_CHAR_UUID "3488b1d2-85ab-4dee-aa63-2674c34de78b"
+
 #define MAX_BUFFER_SIZE 20
 #define DROPPED_MSG_BUFFER_SIZE 16
 #define MOTOR_VEL_CHAR_SIZE 6
 #define MOTOR_CVEL_CHAR_SIZE 4
 #define IR_VAL_CHAR_SIZE 4
+#define TEMP_BUFF_SIZE 2
 
 #define FISHBOT_NAME_BUF_SIZE 20
 #define FW_VERSION_BUF_SIZE 15
@@ -62,6 +67,11 @@ union FishbotName {
 union FishbotFWVersion {
     uint8_t bytes[FW_VERSION_BUF_SIZE];
     char cbytes[FW_VERSION_BUF_SIZE + 1];
+};
+
+union Temperature {
+    uint8_t bytes[TEMP_BUFF_SIZE];
+    uint16_t cmds[TEMP_BUFF_SIZE / 2];
 };
 
 template <typename UT, typename T>
