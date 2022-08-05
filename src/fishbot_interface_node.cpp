@@ -28,6 +28,7 @@
 
 struct FishbotConfig {
     int rate = 65;
+    double panic_time = 0.15;
     bool enable_ir = false;
     bool ret_vel = true;
     bool ret_temp = false;
@@ -43,6 +44,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
 {
     FishbotConfig cfg;
     nh->param<int>("rate", cfg.rate, cfg.rate);
+    nh->param<double>("panic_time", cfg.panic_time, cfg.panic_time);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
     nh->param<bool>("ret_vel", cfg.ret_vel, cfg.ret_vel);
     nh->param<bool>("ret_temp", cfg.ret_temp, cfg.ret_temp);
@@ -113,12 +115,22 @@ public:
     void refresh()
     {
         MotorCmd cmd;
-        cmd.cmds[0] = _id_counter;
-        cmd.cmds[1] = toUnsigned<uint16_t>(_left_motor_cm_per_s * 10);
-        cmd.cmds[2] = toUnsigned<uint16_t>(_right_motor_cm_per_s * 10);
         // cmd.cmds[1] = toUnsigned<uint16_t>(0 + (std::rand() % (1000 - 0 + 1)) - 500);
         // cmd.cmds[2] = toUnsigned<uint16_t>(0 + (std::rand() % (1000 - 0 + 1)) - 500);
+
+        if (_no_comm_time * 1 / _cfg.rate > _cfg.panic_time) {
+            cmd.cmds[0] = 0;
+            cmd.cmds[1] = toUnsigned<uint16_t>(0);
+            cmd.cmds[2] = toUnsigned<uint16_t>(0);
+        }
+        else {
+            cmd.cmds[0] = _id_counter;
+            cmd.cmds[1] = toUnsigned<uint16_t>(_left_motor_cm_per_s * 10);
+            cmd.cmds[2] = toUnsigned<uint16_t>(_right_motor_cm_per_s * 10);
+        }
         _send_velocities(cmd);
+        ++_no_comm_time;
+
         if (_id_counter >= 100) {
             _id_counter = 0;
         }
@@ -169,6 +181,7 @@ protected:
                 // divide by 1000, this is to convert from mm/s to m/s
                 rosmsg.left = toSigned<float>(msg.cmds[0]) / 1000.;
                 rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
+                rosmsg.resultant = std::sqrt(rosmsg.left * rosmsg.left + rosmsg.right * rosmsg.right);
                 _current_motor_vel_pub.publish(rosmsg);
             }
         });
@@ -219,6 +232,7 @@ protected:
 
     void _motor_velocity_cb(const bobi_msgs::MotorVelocities::ConstPtr& motor_velocities)
     {
+        _no_comm_time = 0;
         _left_motor_cm_per_s = motor_velocities->left * 100.;
         _right_motor_cm_per_s = motor_velocities->right * 100.;
     }
@@ -381,6 +395,8 @@ protected:
     float _right_motor_cm_per_s;
     uint16_t _id_counter;
     std::mutex _peripheral_lock;
+
+    uint _no_comm_time;
 
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _current_motor_vel_pub;
