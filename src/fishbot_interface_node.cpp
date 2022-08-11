@@ -64,7 +64,8 @@ public:
           _cfg(cfg),
           _left_motor_cm_per_s(0.),
           _right_motor_cm_per_s(0.),
-          _id_counter(0)
+          _id_counter(0),
+          _num_timeouts(0)
     {
         // subs/pubs
         _motor_vel_sub = _nh->subscribe("set_velocities", 1, &BLEInterface::_motor_velocity_cb, this);
@@ -297,7 +298,10 @@ private:
             _peripheral.write_command(MOTOR_VEL_SRV_UUID, DESIRED_VEL_CHAR_UUID, bytes);
         }
         catch (SimpleDBus::Exception::SendFailed& e) {
-            ROS_WARN("Send timed out: %s", e.what());
+            if (_num_timeouts % 10 == 0) {
+                ROS_WARN("Timeouts caught: %ld", _num_timeouts);
+            }
+            ++_num_timeouts;
         }
         catch (const std::exception& e) {
             ROS_WARN("Caught exception, but skipping: %s", e.what());
@@ -397,6 +401,7 @@ protected:
     std::mutex _peripheral_lock;
 
     uint _no_comm_time;
+    uint64_t _num_timeouts;
 
     ros::Subscriber _motor_vel_sub;
     ros::Publisher _current_motor_vel_pub;
