@@ -90,7 +90,7 @@ public:
         _adapter.set_callback_on_scan_start([]() { ROS_INFO("BLE scan started."); });
         _adapter.set_callback_on_scan_stop([]() { ROS_INFO("BLE scan stopped."); });
         _adapter.set_callback_on_scan_found([&](SimpleBLE::Peripheral peripheral) {
-            // std::cout << peripheral.identifier() << " " << peripheral.address() << std::endl;
+            std::cout << peripheral.identifier() << " " << peripheral.address() << std::endl;
             if (/*peripheral.identifier() == DEVICE_NAME &&*/
                 peripheral.address() == cfg.device_uuid) {
                 _peripheral = peripheral;
@@ -299,7 +299,7 @@ private:
         }
         catch (SimpleDBus::Exception::SendFailed& e) {
             if (_num_timeouts % 10 == 0) {
-                ROS_WARN("Timeouts caught: %ld", _num_timeouts);
+                ROS_WARN("Timeouts caught: %ld", _num_timeouts + 1);
             }
             ++_num_timeouts;
         }
