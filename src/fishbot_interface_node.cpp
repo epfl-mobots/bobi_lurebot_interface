@@ -13,6 +13,7 @@
 #include <bobi_msgs/DroppedMessages.h>
 #include <bobi_msgs/DutyCycle.h>
 #include <bobi_msgs/Temperature.h>
+#include <bobi_msgs/KickSpecs.h>
 
 #include <simpleble/SimpleBLE.h>
 #include <simpledbus/base/Exceptions.h>
@@ -65,10 +66,13 @@ public:
           _left_motor_cm_per_s(0.),
           _right_motor_cm_per_s(0.),
           _id_counter(0),
-          _num_timeouts(0)
+          _num_timeouts(0),
+          _is_kicking(false)
     {
         // subs/pubs
         _motor_vel_sub = _nh->subscribe("set_velocities", 1, &BLEInterface::_motor_velocity_cb, this);
+        _kick_sub = _nh->subscribe("set_kick", 1, &BLEInterface::_kick_cb, this);
+
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
         _dropped_msgs_pub = nh->advertise<bobi_msgs::DroppedMessages>("dropped_msgs", 1);
         _current_motor_vel_pub = nh->advertise<bobi_msgs::MotorVelocities>("current_velocities", 1);
@@ -129,7 +133,10 @@ public:
             cmd.cmds[1] = toUnsigned<uint16_t>(_left_motor_cm_per_s * 10);
             cmd.cmds[2] = toUnsigned<uint16_t>(_right_motor_cm_per_s * 10);
         }
-        _send_velocities(cmd);
+
+        if (!_is_kicking) {
+            _send_velocities(cmd);
+        }
         ++_no_comm_time;
 
         if (_id_counter >= 100) {
@@ -182,7 +189,7 @@ protected:
                 // divide by 1000, this is to convert from mm/s to m/s
                 rosmsg.left = toSigned<float>(msg.cmds[0]) / 1000.;
                 rosmsg.right = toSigned<float>(msg.cmds[1]) / 1000.;
-                rosmsg.resultant = std::sqrt(rosmsg.left * rosmsg.left + rosmsg.right * rosmsg.right);
+                rosmsg.resultant = (rosmsg.left + rosmsg.right) / 2.;
                 _current_motor_vel_pub.publish(rosmsg);
             }
         });
@@ -234,8 +241,21 @@ protected:
     void _motor_velocity_cb(const bobi_msgs::MotorVelocities::ConstPtr& motor_velocities)
     {
         _no_comm_time = 0;
+        _is_kicking = false;
         _left_motor_cm_per_s = motor_velocities->left * 100.;
         _right_motor_cm_per_s = motor_velocities->right * 100.;
+    }
+
+    void _kick_cb(const bobi_msgs::KickSpecs::ConstPtr& kick_specs)
+    {
+        _no_comm_time = 0;
+        _is_kicking = true;
+        _kick_cmd.cmds[0] = toUnsigned<uint16_t>(kick_specs->state);
+        _kick_cmd.cmds[1] = toUnsigned<uint16_t>(kick_specs->speed * 1000);
+        _kick_cmd.cmds[2] = toUnsigned<uint16_t>(kick_specs->dphi * 1000);
+        _kick_cmd.cmds[3] = toUnsigned<uint16_t>(kick_specs->tau * 1000);
+        _kick_cmd.cmds[4] = toUnsigned<uint16_t>(kick_specs->tau0 * 1000);
+        _send_kick(_kick_cmd);
     }
 
     bool _enable_ir_srv_cb(
@@ -296,6 +316,26 @@ private:
 
         try {
             _peripheral.write_command(MOTOR_VEL_SRV_UUID, DESIRED_VEL_CHAR_UUID, bytes);
+        }
+        catch (SimpleDBus::Exception::SendFailed& e) {
+            if (_num_timeouts % 10 == 0) {
+                ROS_WARN("Timeouts caught: %ld", _num_timeouts + 1);
+            }
+            ++_num_timeouts;
+        }
+        catch (const std::exception& e) {
+            ROS_WARN("Caught exception, but skipping: %s", e.what());
+        }
+    }
+
+    void _send_kick(const KickCmd& cmd)
+    {
+        const std::lock_guard<std::mutex> lock(_peripheral_lock);
+        SimpleBLE::ByteArray bytes(sizeof(cmd.bytes));
+        std::copy(cmd.bytes, cmd.bytes + sizeof(cmd.bytes), bytes.begin());
+
+        try {
+            _peripheral.write_command(KICK_SRV_UUID, KICK_SPECS_CHAR_UUID, bytes);
         }
         catch (SimpleDBus::Exception::SendFailed& e) {
             if (_num_timeouts % 10 == 0) {
@@ -399,11 +439,14 @@ protected:
     float _right_motor_cm_per_s;
     uint16_t _id_counter;
     std::mutex _peripheral_lock;
+    KickCmd _kick_cmd;
+    std::atomic<bool> _is_kicking;
 
     uint _no_comm_time;
     uint64_t _num_timeouts;
 
     ros::Subscriber _motor_vel_sub;
+    ros::Subscriber _kick_sub;
     ros::Publisher _current_motor_vel_pub;
     ros::Publisher _current_temp_pub;
     ros::Publisher _dropped_msgs_pub;
