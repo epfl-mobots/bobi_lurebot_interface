@@ -99,7 +99,11 @@ public:
             }
         });
         _adapter.scan_for(2500);
-
+        while (!_peripheral.initialized()) {
+            ROS_ERROR("Trying to intitialize BT peripheral");
+            ros::Rate wait(1);
+            wait.sleep();
+        }
         assert(_peripheral.initialized());
         _peripheral.connect();
         _init_notifications();

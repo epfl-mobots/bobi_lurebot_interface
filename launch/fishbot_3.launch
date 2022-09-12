@@ -1,0 +1,10 @@
+<launch>
+
+    <arg name="ns" default="/" />
+    <group ns="$(arg ns)">
+        <rosparam command="load" file="$(find bobi_fishbot_interface)/config/fishbot_3.yaml" />
+
+        <node name="fishbot_interface_node" pkg="bobi_fishbot_interface" type="fishbot_interface_node" output="screen"/>
+    </group>
+
+</launch>
