@@ -5,7 +5,7 @@ enable_ir: False
 ret_vel: True
 ret_temp: False
 ret_dropped_msgs: True
-max_acceleration: 1.2
+max_acceleration: 1.0
 pwm_duty_cycle_perc: 60
 robot_id: 0
 bt_adapter: 0
