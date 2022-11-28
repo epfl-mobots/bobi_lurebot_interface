@@ -127,12 +127,19 @@ public:
             cmd.cmds[0] = 0;
             cmd.cmds[1] = toUnsigned<uint16_t>(0);
             cmd.cmds[2] = toUnsigned<uint16_t>(0);
+            cmd.cmds[3] = static_cast<uint16_t>(_cfg.max_acceleration * 100);
         }
         else {
             cmd.cmds[0] = _id_counter;
             cmd.cmds[1] = toUnsigned<uint16_t>(_left_motor_cm_per_s * 10);
             cmd.cmds[2] = toUnsigned<uint16_t>(_right_motor_cm_per_s * 10);
+            cmd.cmds[3] = static_cast<uint16_t>(_cfg.max_acceleration * 100);
         }
+
+        if (_accel_cm_per_ssq > 0.) {
+            cmd.cmds[3] = static_cast<uint16_t>(_accel_cm_per_ssq);
+        }
+
         _send_velocities(cmd);
         ++_no_comm_time;
 
@@ -240,6 +247,7 @@ protected:
         _no_comm_time = 0;
         _left_motor_cm_per_s = motor_velocities->left * 100.;
         _right_motor_cm_per_s = motor_velocities->right * 100.;
+        _accel_cm_per_ssq = motor_velocities->acceleration * 100;
     }
 
     bool _enable_ir_srv_cb(
@@ -401,6 +409,7 @@ protected:
 
     float _left_motor_cm_per_s;
     float _right_motor_cm_per_s;
+    float _accel_cm_per_ssq;
     uint16_t _id_counter;
     std::mutex _peripheral_lock;
 
