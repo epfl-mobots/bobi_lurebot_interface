@@ -16,7 +16,7 @@
 
 #include <simpleble/SimpleBLE.h>
 #include <simpledbus/base/Exceptions.h>
-#include <bobi_fishbot_interface/fishbot_ble_details.hpp>
+#include <bobi_lurebot_interface/lurebot_ble_details.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -26,7 +26,7 @@
 
 #include <random>
 
-struct FishbotConfig {
+struct LurebotConfig {
     int rate = 65;
     double panic_time = 0.15;
     bool enable_ir = false;
@@ -40,9 +40,9 @@ struct FishbotConfig {
     std::string device_uuid;
 };
 
-FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
+LurebotConfig get_lurebot_config(const std::shared_ptr<ros::NodeHandle> nh)
 {
-    FishbotConfig cfg;
+    LurebotConfig cfg;
     nh->param<int>("rate", cfg.rate, cfg.rate);
     nh->param<double>("panic_time", cfg.panic_time, cfg.panic_time);
     nh->param<bool>("enable_ir", cfg.enable_ir, cfg.enable_ir);
@@ -59,7 +59,7 @@ FishbotConfig get_fishbot_config(const std::shared_ptr<ros::NodeHandle> nh)
 
 class BLEInterface {
 public:
-    BLEInterface(std::shared_ptr<ros::NodeHandle> nh, FishbotConfig cfg)
+    BLEInterface(std::shared_ptr<ros::NodeHandle> nh, LurebotConfig cfg)
         : _nh(nh),
           _cfg(cfg),
           _left_motor_cm_per_s(0.),
@@ -154,9 +154,9 @@ public:
 protected:
     void _init_notifications()
     {
-        ROS_INFO("Connected to Fishbot:");
+        ROS_INFO("Connected to Lurebot:");
         {
-            FishbotName msg;
+            LurebotName msg;
             SimpleBLE::ByteArray bytes = _peripheral.readBytes(INFO_SRV_UUID, DEVICE_NAME_CHAR_UUID);
             if (bytes.size()) {
                 std::copy(bytes.begin(), bytes.end(), msg.bytes);
@@ -164,7 +164,7 @@ protected:
             }
         }
         {
-            FishbotFWVersion msg;
+            LurebotFWVersion msg;
             SimpleBLE::ByteArray bytes = _peripheral.readBytes(INFO_SRV_UUID, FW_VERSION_CHAR_UUID);
             if (bytes.size()) {
                 std::copy(bytes.begin(), bytes.end(), msg.bytes);
@@ -405,7 +405,7 @@ protected:
     SimpleBLE::Adapter _adapter;
 
     std::shared_ptr<ros::NodeHandle> _nh;
-    FishbotConfig _cfg;
+    LurebotConfig _cfg;
 
     float _left_motor_cm_per_s;
     float _right_motor_cm_per_s;
@@ -431,10 +431,10 @@ protected:
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "fishbot_interface_node");
+    ros::init(argc, argv, "lurebot_interface_node");
     std::shared_ptr<ros::NodeHandle> nh(new ros::NodeHandle());
 
-    FishbotConfig cfg = get_fishbot_config(nh);
+    LurebotConfig cfg = get_lurebot_config(nh);
     BLEInterface blei(nh, cfg);
 
     ros::Rate loop_rate(cfg.rate);

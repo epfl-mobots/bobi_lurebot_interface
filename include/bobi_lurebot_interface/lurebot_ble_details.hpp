@@ -1,5 +1,5 @@
-#ifndef FISHBOT_DETAILS_H
-#define FISHBOT_DETAILS_H
+#ifndef LUREBOT_DETAILS_H
+#define LUREBOT_DETAILS_H
 
 #include <stdint.h>
 #include <numeric>
@@ -41,7 +41,7 @@
 #define IR_VAL_CHAR_SIZE 4
 #define TEMP_BUFF_SIZE 2
 
-#define FISHBOT_NAME_BUF_SIZE 20
+#define LUREBOT_NAME_BUF_SIZE 20
 #define FW_VERSION_BUF_SIZE 15
 
 union MotorCmd {
@@ -59,12 +59,12 @@ union MotorSpeeds {
     uint16_t cmds[MOTOR_CVEL_CHAR_SIZE / 2];
 };
 
-union FishbotName {
-    uint8_t bytes[FISHBOT_NAME_BUF_SIZE];
-    char cbytes[FISHBOT_NAME_BUF_SIZE + 1];
+union LurebotName {
+    uint8_t bytes[LUREBOT_NAME_BUF_SIZE];
+    char cbytes[LUREBOT_NAME_BUF_SIZE + 1];
 };
 
-union FishbotFWVersion {
+union LurebotFWVersion {
     uint8_t bytes[FW_VERSION_BUF_SIZE];
     char cbytes[FW_VERSION_BUF_SIZE + 1];
 };

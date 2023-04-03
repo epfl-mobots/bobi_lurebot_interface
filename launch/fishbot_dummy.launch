@@ -2,9 +2,9 @@
 
     <arg name="ns" default="/" />
     <group ns="$(arg ns)">
-        <rosparam command="load" file="$(find bobi_fishbot_interface)/config/fishbot_1.yaml" />
+        <rosparam command="load" file="$(find bobi_lurebot_interface)/config/lurebot_1.yaml" />
 
-        <node name="fishbot_dummy_interface_node" pkg="bobi_fishbot_interface" type="fishbot_dummy_interface_node" output="screen"/>
+        <node name="lurebot_dummy_interface_node" pkg="bobi_lurebot_interface" type="lurebot_dummy_interface_node" output="screen"/>
     </group>
 
 </launch>

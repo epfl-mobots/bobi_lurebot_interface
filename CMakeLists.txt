@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(bobi_fishbot_interface)
+project(bobi_lurebot_interface)
 
 add_compile_options(-std=c++17)
 
@@ -25,13 +25,13 @@ include_directories(
   ${SIMPLEBLUEZ_INCLUDES}
 )
 
-add_executable(fishbot_interface_node src/fishbot_interface_node.cpp)
-target_link_libraries(fishbot_interface_node ${catkin_LIBRARIES} simpleble)
-add_dependencies(fishbot_interface_node ${catkin_EXPORTED_TARGETS}  bobi_msgs_generate_messages_cpp)
+add_executable(lurebot_interface_node src/lurebot_interface_node.cpp)
+target_link_libraries(lurebot_interface_node ${catkin_LIBRARIES} simpleble)
+add_dependencies(lurebot_interface_node ${catkin_EXPORTED_TARGETS}  bobi_msgs_generate_messages_cpp)
 
-add_executable(fishbot_dummy_interface_node src/fishbot_dummy_interface_node.cpp)
-target_link_libraries(fishbot_dummy_interface_node ${catkin_LIBRARIES})
-add_dependencies(fishbot_dummy_interface_node ${catkin_EXPORTED_TARGETS}  bobi_msgs_generate_messages_cpp)
+add_executable(lurebot_dummy_interface_node src/lurebot_dummy_interface_node.cpp)
+target_link_libraries(lurebot_dummy_interface_node ${catkin_LIBRARIES})
+add_dependencies(lurebot_dummy_interface_node ${catkin_EXPORTED_TARGETS}  bobi_msgs_generate_messages_cpp)
 
 add_executable(timed_motor_vel src/test/timed_motor_vel.cpp)
 target_link_libraries(timed_motor_vel ${catkin_LIBRARIES})

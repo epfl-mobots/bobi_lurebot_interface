@@ -9,12 +9,12 @@
 
 #include <iostream>
 
-class DummyFishbotInterface {
+class DummyLurebotInterface {
 public:
-    DummyFishbotInterface(std::shared_ptr<ros::NodeHandle> nh)
+    DummyLurebotInterface(std::shared_ptr<ros::NodeHandle> nh)
         : _nh(nh)
     {
-        _motor_vel_sub = _nh->subscribe("set_velocities", 1, &DummyFishbotInterface::_motor_velocity_cb, this);
+        _motor_vel_sub = _nh->subscribe("set_velocities", 1, &DummyLurebotInterface::_motor_velocity_cb, this);
 
         _cmd_vel_pub = nh->advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
@@ -22,7 +22,7 @@ public:
         _proximity_sensor_pub = nh->advertise<bobi_msgs::ProximitySensors>("proximity_sensors", 1);
 
         _pose_pub = nh->advertise<bobi_msgs::PoseVec>("robot_poses", 1);
-        _odom_sub = _nh->subscribe("odom", 1, &DummyFishbotInterface::_odom_cb, this);
+        _odom_sub = _nh->subscribe("odom", 1, &DummyLurebotInterface::_odom_cb, this);
     }
 
 protected:
@@ -72,10 +72,10 @@ protected:
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "fishbot_dummy_interface_node");
+    ros::init(argc, argv, "lurebot_dummy_interface_node");
     std::shared_ptr<ros::NodeHandle> nh(new ros::NodeHandle());
 
-    DummyFishbotInterface fishbot(nh);
+    DummyLurebotInterface lurebot(nh);
 
     int rate;
     nh->param<int>("dummy_interface_node/rate", rate, 30);

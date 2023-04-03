@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>bobi_fishbot_interface</name>
+  <name>bobi_lurebot_interface</name>
   <version>0.1.0</version>
 
-  <description>The bobi_fishbot_interface package is responsible for communicating with the fishbot</description>
+  <description>The bobi_lurebot_interface package is responsible for communicating with the lurebot</description>
   <maintainer email="b.papaspyros@gmail.com">Vaios Papaspyros</maintainer>
   <license>BSD</license>
 
